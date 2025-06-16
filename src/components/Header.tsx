@@ -5,7 +5,7 @@ import UserProfile from './UserProfile';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   return (
     <header className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 shadow-lg">
@@ -36,14 +36,16 @@ const Header = () => {
               <span className="text-sm font-medium">10 Cámaras</span>
             </div>
 
-            {profile && (
+            {/* Solo mostrar info de usuario si existe */}
+            {profile && user && (
               <div className="text-xs text-slate-400 text-right">
                 <p>Usuario: {profile.full_name}</p>
                 <p>Rol: {profile.role}</p>
               </div>
             )}
             
-            <UserProfile />
+            {/* Solo mostrar UserProfile si hay usuario */}
+            {user && <UserProfile />}
             
             <div className="text-right">
               <p className="text-xs text-slate-400">
