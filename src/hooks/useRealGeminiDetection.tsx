@@ -6,18 +6,38 @@ export const useRealGeminiDetection = (videoElement: HTMLVideoElement | null) =>
   const [detections, setDetections] = useState<RealDetection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'error'>('testing');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameCountRef = useRef(0);
   const lastAnalysisRef = useRef(0);
 
+  // Probar conexión inicial
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('🔍 Probando conexión inicial con Gemini...');
+        const isConnected = await geminiService.testConnection();
+        setConnectionStatus(isConnected ? 'connected' : 'error');
+        console.log(`🎯 Estado de conexión: ${isConnected ? 'CONECTADO' : 'ERROR'}`);
+      } catch (error) {
+        console.error('❌ Error en test de conexión:', error);
+        setConnectionStatus('error');
+      }
+    };
+
+    testConnection();
+  }, []);
+
   // Procesar frame con Gemini AI real
   const processFrameWithGemini = useCallback(async () => {
-    if (!videoElement || videoElement.videoWidth === 0) return;
+    if (!videoElement || videoElement.videoWidth === 0 || connectionStatus !== 'connected') {
+      return;
+    }
 
     const now = Date.now();
-    // Analizar cada 2 segundos para evitar exceso de llamadas a la API
-    if (now - lastAnalysisRef.current < 2000) return;
+    // Analizar cada 3 segundos para evitar exceso de llamadas
+    if (now - lastAnalysisRef.current < 3000) return;
     
     try {
       // Crear canvas para captura
@@ -37,20 +57,20 @@ export const useRealGeminiDetection = (videoElement: HTMLVideoElement | null) =>
       // Convertir a base64 para Gemini
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       
-      console.log('🧠 Analizando frame con Gemini AI real...');
+      console.log('🎥 Capturando frame para análisis Gemini...');
       setIsLoading(true);
       
-      // Realizar análisis con Gemini AI
+      // Realizar análisis con Gemini AI REAL
       const realDetections = await geminiService.analyzeFrame(imageData);
       
       if (realDetections.length > 0) {
-        console.log('✅ Detecciones reales de Gemini:', realDetections);
+        console.log('🎯 ¡DETECCIONES REALES!', realDetections.map(d => `${d.type}: ${d.label} (${(d.confidence * 100).toFixed(1)}%)`));
         setDetections(prev => {
-          // Combinar nuevas detecciones con las anteriores
           const updated = [...realDetections, ...prev];
-          // Mantener solo las últimas 15 detecciones
-          return updated.slice(0, 15);
+          return updated.slice(0, 12); // Mantener últimas 12 detecciones
         });
+      } else {
+        console.log('👀 Gemini analizó pero no encontró objetos específicos');
       }
 
       lastAnalysisRef.current = now;
@@ -62,20 +82,20 @@ export const useRealGeminiDetection = (videoElement: HTMLVideoElement | null) =>
     } finally {
       setIsLoading(false);
     }
-  }, [videoElement]);
+  }, [videoElement, connectionStatus]);
 
   // Inicializar detección real
   useEffect(() => {
-    if (videoElement && videoElement.videoWidth > 0) {
-      console.log('🚀 Iniciando Gemini AI REAL Detection...');
+    if (videoElement && videoElement.videoWidth > 0 && connectionStatus === 'connected') {
+      console.log('🚀 INICIANDO GEMINI AI REAL DETECTION...');
       setIsLoading(false);
       setError(null);
       
-      // Procesar frames cada 500ms para análisis suave
+      // Procesar frames cada 1 segundo
       intervalRef.current = setInterval(() => {
         frameCountRef.current++;
         processFrameWithGemini();
-      }, 500);
+      }, 1000);
       
       return () => {
         if (intervalRef.current) {
@@ -83,16 +103,16 @@ export const useRealGeminiDetection = (videoElement: HTMLVideoElement | null) =>
         }
       };
     }
-  }, [videoElement, processFrameWithGemini]);
+  }, [videoElement, processFrameWithGemini, connectionStatus]);
 
-  // Limpiar detecciones antiguas (cada 30 segundos)
+  // Limpiar detecciones antiguas
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
       setDetections(prev => 
-        prev.filter(detection => now - detection.timestamp < 30000)
+        prev.filter(detection => now - detection.timestamp < 45000) // 45 segundos
       );
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(cleanupInterval);
   }, []);
@@ -101,7 +121,9 @@ export const useRealGeminiDetection = (videoElement: HTMLVideoElement | null) =>
     detections,
     isLoading,
     error,
+    connectionStatus,
     frameCount: frameCountRef.current,
-    isRealGemini: true // Indicador de que es Gemini real
+    isRealGemini: true,
+    geminiStats: geminiService.getStats()
   };
 };

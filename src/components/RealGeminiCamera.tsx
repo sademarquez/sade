@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useRealGeminiDetection } from '@/hooks/useRealGeminiDetection';
 import GeminiDetectionOverlay from './GeminiDetectionOverlay';
-import { Camera, Wifi, Brain, Zap, Shield, Activity } from 'lucide-react';
+import { Camera, Wifi, Brain, Zap, Shield, Activity, AlertCircle, CheckCircle } from 'lucide-react';
 
 const RealGeminiCamera = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -10,11 +10,11 @@ const RealGeminiCamera = () => {
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { detections, isLoading, error: detectionError, frameCount, isRealGemini } = useRealGeminiDetection(
+  const { detections, isLoading, error: detectionError, frameCount, connectionStatus, geminiStats } = useRealGeminiDetection(
     videoRef.current
   );
 
-  // Inicializar cámara con configuración optimizada
+  // Inicializar cámara
   useEffect(() => {
     const initializeCamera = async () => {
       try {
@@ -51,6 +51,28 @@ const RealGeminiCamera = () => {
     };
   }, []);
 
+  const getConnectionIcon = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return <CheckCircle className="h-4 w-4 text-green-400" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-400" />;
+      default:
+        return <Wifi className="h-4 w-4 text-yellow-400 animate-spin" />;
+    }
+  };
+
+  const getConnectionText = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return 'CONECTADO';
+      case 'error':
+        return 'ERROR API';
+      default:
+        return 'PROBANDO...';
+    }
+  };
+
   if (error) {
     return (
       <div className="relative bg-slate-800 rounded-lg overflow-hidden aspect-video flex items-center justify-center">
@@ -73,19 +95,22 @@ const RealGeminiCamera = () => {
         playsInline
       />
 
-      {/* Overlay de estado superior REAL */}
+      {/* Overlay de estado superior con conexión */}
       <div className="absolute top-2 left-2 flex items-center space-x-3 bg-black/90 backdrop-blur-sm rounded-lg px-4 py-2 z-20 border border-green-500/50">
         <div className={`w-3 h-3 rounded-full ${isStreamActive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
         <span className="text-white text-sm font-bold">
           Gemini AI REAL
         </span>
-        <Brain className="h-4 w-4 text-green-400 animate-pulse" />
-        <div className="px-2 py-1 bg-green-600 rounded text-xs font-bold">
-          LIVE
-        </div>
+        {getConnectionIcon()}
+        <span className={`text-xs font-bold ${
+          connectionStatus === 'connected' ? 'text-green-400' : 
+          connectionStatus === 'error' ? 'text-red-400' : 'text-yellow-400'
+        }`}>
+          {getConnectionText()}
+        </span>
       </div>
 
-      {/* Estado de análisis */}
+      {/* Estado de análisis con stats */}
       <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm rounded px-3 py-1 z-20">
         <div className="flex items-center space-x-2">
           {isLoading ? (
@@ -95,11 +120,16 @@ const RealGeminiCamera = () => {
             </>
           ) : (
             <>
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <Brain className="w-3 h-3 text-green-400 animate-pulse" />
               <span className="text-green-400 text-xs">IA Activa</span>
             </>
           )}
         </div>
+        {geminiStats && (
+          <div className="text-xs text-gray-400 mt-1">
+            Requests: {geminiStats.requestCount}
+          </div>
+        )}
       </div>
 
       {/* Contador de detecciones reales */}
@@ -113,10 +143,10 @@ const RealGeminiCamera = () => {
         )}
       </div>
 
-      {/* Indicador de procesamiento real */}
+      {/* Indicador de procesamiento real con status */}
       <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm rounded px-2 py-1 z-20">
         <span className="text-cyan-400 text-xs font-mono">
-          Gemini Real • Frame: {frameCount}
+          Frame: {frameCount} • {connectionStatus === 'connected' ? '🟢 LIVE' : '🔴 OFF'}
         </span>
       </div>
 
@@ -128,33 +158,36 @@ const RealGeminiCamera = () => {
         frameCount={frameCount}
       />
 
-      {/* Grid neural de análisis real */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <svg className="w-full h-full">
-          <defs>
-            <pattern id="real-neural-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#10b981" strokeWidth="0.5" opacity="0.5"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#real-neural-grid)" />
-          
-          {/* Esquinas de análisis real */}
-          <g stroke="#10b981" strokeWidth="2" fill="none" opacity="0.8">
-            <path d="M 20 20 L 20 10 L 30 10" />
-            <path d="M calc(100% - 20px) 20 L calc(100% - 20px) 10 L calc(100% - 30px) 10" />
-            <path d="M 20 calc(100% - 20px) L 20 calc(100% - 10px) L 30 calc(100% - 10px)" />
-            <path d="M calc(100% - 20px) calc(100% - 20px) L calc(100% - 20px) calc(100% - 10px) L calc(100% - 30px) calc(100% - 10px)" />
-          </g>
-        </svg>
-      </div>
+      {/* Grid neural animado solo cuando está conectado */}
+      {connectionStatus === 'connected' && (
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          <svg className="w-full h-full">
+            <defs>
+              <pattern id="real-neural-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#10b981" strokeWidth="0.5" opacity="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#real-neural-grid)" />
+            
+            <g stroke="#10b981" strokeWidth="2" fill="none" opacity="0.8">
+              <path d="M 20 20 L 20 10 L 30 10" />
+              <path d="M calc(100% - 20px) 20 L calc(100% - 20px) 10 L calc(100% - 30px) 10" />
+              <path d="M 20 calc(100% - 20px) L 20 calc(100% - 10px) L 30 calc(100% - 10px)" />
+              <path d="M calc(100% - 20px) calc(100% - 20px) L calc(100% - 20px) calc(100% - 10px) L calc(100% - 30px) calc(100% - 10px)" />
+            </g>
+          </svg>
+        </div>
+      )}
 
-      {/* Líneas de escaneo real */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent opacity-70 animate-pulse" 
-             style={{top: '40%', animationDuration: '2s'}}></div>
-        <div className="absolute w-0.5 h-full bg-gradient-to-b from-transparent via-green-400 to-transparent opacity-70 animate-pulse" 
-             style={{left: '60%', animationDuration: '3s', animationDelay: '0.5s'}}></div>
-      </div>
+      {/* Líneas de escaneo cuando está analizando */}
+      {isLoading && connectionStatus === 'connected' && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent opacity-70 animate-pulse" 
+               style={{top: '40%', animationDuration: '2s'}}></div>
+          <div className="absolute w-0.5 h-full bg-gradient-to-b from-transparent via-green-400 to-transparent opacity-70 animate-pulse" 
+               style={{left: '60%', animationDuration: '3s', animationDelay: '0.5s'}}></div>
+        </div>
+      )}
     </div>
   );
 };
