@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, EyeOff } from 'lucide-react';
+import DemoAccess from '@/components/DemoAccess';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, signUp, loading, isDemoMode } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,8 +18,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already authenticated
-  if (user && !loading) {
+  // Redirect if already authenticated or in demo mode
+  if ((user && !loading) || isDemoMode) {
     return <Navigate to="/" replace />;
   }
 
@@ -50,7 +51,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-6">
         {/* Logo y Título */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
@@ -65,6 +66,20 @@ const Auth = () => {
           </p>
         </div>
 
+        {/* Acceso Demo */}
+        <DemoAccess />
+
+        {/* Separador */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-600" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-slate-900 px-2 text-slate-400">O continúa con credenciales</span>
+          </div>
+        </div>
+
+        {/* Formulario de autenticación */}
         <Card className="bg-white/10 backdrop-blur-sm border-slate-700">
           <CardHeader className="text-center">
             <CardTitle className="text-white">

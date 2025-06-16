@@ -11,10 +11,10 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from '@/components/ui/dialog';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, PlayCircle } from 'lucide-react';
 
 const UserProfile = () => {
-  const { user, profile, signOut, updateProfile } = useAuth();
+  const { user, profile, signOut, updateProfile, isDemoMode } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [department, setDepartment] = useState(profile?.department || '');
@@ -53,7 +53,7 @@ const UserProfile = () => {
     return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  if (!user || !profile) return null;
+  if (!profile && !isDemoMode) return null;
 
   return (
     <div className="flex items-center space-x-3">
@@ -63,29 +63,40 @@ const UserProfile = () => {
             variant="ghost" 
             className="flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-700"
           >
-            <User className="h-4 w-4" />
-            <span className="hidden md:block">{profile.full_name}</span>
+            {isDemoMode ? <PlayCircle className="h-4 w-4" /> : <User className="h-4 w-4" />}
+            <span className="hidden md:block">{profile?.full_name}</span>
           </Button>
         </DialogTrigger>
         
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span>Perfil de Usuario</span>
+              {isDemoMode ? <PlayCircle className="h-5 w-5" /> : <User className="h-5 w-5" />}
+              <span>{isDemoMode ? 'Perfil Demo' : 'Perfil de Usuario'}</span>
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
+            {isDemoMode && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800 font-medium">
+                  🎭 Modo Demostración Activo
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Los cambios no se guardarán permanentemente
+                </p>
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="font-medium text-slate-600">Email:</p>
-                <p>{user.email}</p>
+                <p>{isDemoMode ? 'demo@sade.com' : user?.email}</p>
               </div>
               <div>
                 <p className="font-medium text-slate-600">Rol:</p>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(profile.role)}`}>
-                  {getRoleDisplay(profile.role)}
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(profile?.role || 'viewer')}`}>
+                  {getRoleDisplay(profile?.role || 'viewer')}
                 </span>
               </div>
             </div>
@@ -128,7 +139,7 @@ const UserProfile = () => {
                   className="flex items-center space-x-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Cerrar Sesión</span>
+                  <span>{isDemoMode ? 'Salir Demo' : 'Cerrar Sesión'}</span>
                 </Button>
               </div>
             </form>
