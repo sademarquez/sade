@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, AlertTriangle, Camera, Activity, cigarette, coffee, eye, eye-off } from 'lucide-react';
+import { Shield, AlertTriangle, Camera, Activity } from 'lucide-react';
 
 interface DetectionResult {
   type: 'gesture' | 'weapon' | 'movement' | 'risk' | 'smoking' | 'drinking' | 'eating' | 'phone' | 'suspicious';
@@ -29,15 +29,15 @@ const RealTimeDetectionOverlay: React.FC<RealTimeDetectionOverlayProps> = ({
       case 'risk':
         return <Shield className="h-4 w-4 text-orange-400" />;
       case 'smoking':
-        return <cigarette className="h-4 w-4 text-yellow-400" />;
+        return <Activity className="h-4 w-4 text-yellow-400" />;
       case 'drinking':
-        return <coffee className="h-4 w-4 text-brown-400" />;
+        return <Activity className="h-4 w-4 text-amber-400" />;
       case 'eating':
         return <Activity className="h-4 w-4 text-green-400" />;
       case 'phone':
         return <Camera className="h-4 w-4 text-purple-400" />;
       case 'suspicious':
-        return <eye className="h-4 w-4 text-red-300" />;
+        return <AlertTriangle className="h-4 w-4 text-red-300" />;
       case 'gesture':
         return <Activity className="h-4 w-4 text-blue-400" />;
       case 'movement':
